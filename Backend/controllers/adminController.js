@@ -50,19 +50,23 @@ exports.getUsers = asyncHandler(async (req, res) => {
   const where  = [];
   const params = [];
 
-  if (name)    { where.push('name    LIKE ?'); params.push(`%${name}%`);    }
-  if (email)   { where.push('email   LIKE ?'); params.push(`%${email}%`);   }
-  if (address) { where.push('address LIKE ?'); params.push(`%${address}%`); }
-  if (role)    { where.push('role = ?');        params.push(role);           }
+  if (name)    { where.push('u.name    LIKE ?'); params.push(`%${name}%`);    }
+  if (email)   { where.push('u.email   LIKE ?'); params.push(`%${email}%`);   }
+  if (address) { where.push('u.address LIKE ?'); params.push(`%${address}%`); }
+  if (role)    { where.push('u.role = ?');        params.push(role);           }
 
   const col   = safeCol(sortBy, USER_SORT_COLS);
   const order = safeOrder(sortOrder);
 
   const [rows] = await db.query(
-    `SELECT id, name, email, address, role, created_at
-     FROM   users
+    `SELECT u.id, u.name, u.email, u.address, u.role, u.created_at,
+            (SELECT ROUND(AVG(r.rating), 2)
+             FROM stores s
+             JOIN ratings r ON r.store_id = s.id
+             WHERE s.owner_id = u.id) AS averageRating
+     FROM   users u
      ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
-     ORDER BY ${col} ${order}`,
+     ORDER BY u.${col} ${order}`,
     params
   );
 
@@ -71,7 +75,13 @@ exports.getUsers = asyncHandler(async (req, res) => {
 
 exports.getUserById = asyncHandler(async (req, res, next) => {
   const [[user]] = await db.query(
-    'SELECT id, name, email, address, role, created_at FROM users WHERE id = ?',
+    `SELECT u.id, u.name, u.email, u.address, u.role, u.created_at,
+            (SELECT ROUND(AVG(r.rating), 2)
+             FROM stores s
+             JOIN ratings r ON r.store_id = s.id
+             WHERE s.owner_id = u.id) AS averageRating
+     FROM   users u
+     WHERE  u.id = ?`,
     [req.params.id]
   );
   if (!user) return next(new AppError('User not found.', 404));

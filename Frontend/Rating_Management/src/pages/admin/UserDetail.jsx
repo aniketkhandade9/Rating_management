@@ -66,6 +66,11 @@ export default function UserDetail() {
           <div>
             <p className="font-bold" style={{ fontSize: '1.1rem' }}>{user.name}</p>
             <p className="text-muted text-sm">{user.email}</p>
+            {user.role === 'store_owner' && (
+              <p className="text-xs mt-2" style={{ color: 'var(--yellow)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                ★ {user.averageRating ? `${Number(user.averageRating).toFixed(1)} / 5 (Overall Rating)` : 'No ratings yet'}
+              </p>
+            )}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span className={`badge ${BADGE_MAP[user.role]}`}>{ROLE_LABEL[user.role]}</span>

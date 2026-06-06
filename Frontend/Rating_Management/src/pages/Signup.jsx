@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 
-const validate = ({ name, email, password, address, role }) => {
+const validate = ({ name, email, password, address, role, storeName, storeEmail, storeAddress }) => {
   const e = {};
   if (!name || name.trim().length < 20 || name.trim().length > 60)
     e.name = 'Name must be 20–60 characters.';
@@ -18,12 +18,30 @@ const validate = ({ name, email, password, address, role }) => {
     e.address = 'Address must be at most 400 characters.';
   if (!role || !['user', 'store_owner'].includes(role))
     e.role = 'Please select a valid account type.';
+
+  if (role === 'store_owner') {
+    if (!storeName || storeName.trim().length < 20 || storeName.trim().length > 60)
+      e.storeName = 'Store name must be 20–60 characters.';
+    if (!storeEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(storeEmail))
+      e.storeEmail = 'Enter a valid store email address.';
+    if (!storeAddress || storeAddress.trim().length === 0 || storeAddress.length > 400)
+      e.storeAddress = 'Store address must be between 1 and 400 characters.';
+  }
   return e;
 };
 
 export default function Signup() {
   const navigate = useNavigate();
-  const [form, setForm]       = useState({ name: '', email: '', password: '', address: '', role: 'user' });
+  const [form, setForm]       = useState({
+    name: '',
+    email: '',
+    password: '',
+    address: '',
+    role: 'user',
+    storeName: '',
+    storeEmail: '',
+    storeAddress: ''
+  });
   const [errors, setErrors]   = useState({});
   const [apiError, setApiError] = useState('');
   const [busy, setBusy]         = useState(false);
@@ -40,7 +58,19 @@ export default function Signup() {
 
     setApiError(''); setBusy(true);
     try {
-      await api.post('/auth/signup', form);
+      const payload = {
+        name: form.name,
+        email: form.email,
+        password: form.password,
+        address: form.address,
+        role: form.role,
+        ...(form.role === 'store_owner' && {
+          storeName: form.storeName,
+          storeEmail: form.storeEmail,
+          storeAddress: form.storeAddress
+        })
+      };
+      await api.post('/auth/signup', payload);
       navigate('/login', { state: { registered: true } });
     } catch (err) {
       setApiError(err.message ?? 'Registration failed.');
@@ -124,6 +154,15 @@ export default function Signup() {
             </div>
             {errors.role && <p className="form-error">{errors.role}</p>}
           </div>
+
+          {form.role === 'store_owner' && (
+            <div className="fade-in" style={{ borderTop: '1px solid var(--glass-b)', paddingTop: 16, marginTop: 16, marginBottom: 16 }}>
+              <p className="form-label" style={{ color: 'var(--accent-l)', marginBottom: 12, fontWeight: 700 }}>Store Details</p>
+              {field('storeName', 'Store Name', 'text', 'Your store name (20–60 chars)', '20–60 characters required')}
+              {field('storeEmail', 'Store Email Address', 'email', 'store@example.com')}
+              {field('storeAddress', 'Store Address', 'text', 'Store physical address', 'Max 400 characters')}
+            </div>
+          )}
 
           {field('password', 'Password',       'password', '••••••••', '8–16 chars · uppercase · special character')}
 

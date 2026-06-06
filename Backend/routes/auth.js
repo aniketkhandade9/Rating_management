@@ -37,6 +37,25 @@ const signupRules = [
     .optional()
     .isIn(['user', 'store_owner'])
     .withMessage('Role must be either user or store_owner.'),
+
+  body('storeName')
+    .if(body('role').equals('store_owner'))
+    .trim()
+    .isLength({ min: 20, max: 60 })
+    .withMessage('Store name must be between 20 and 60 characters.'),
+
+  body('storeEmail')
+    .if(body('role').equals('store_owner'))
+    .trim()
+    .isEmail()
+    .withMessage('Please enter a valid store email address.')
+    .normalizeEmail(),
+
+  body('storeAddress')
+    .if(body('role').equals('store_owner'))
+    .trim()
+    .isLength({ min: 1, max: 400 })
+    .withMessage('Store address must be between 1 and 400 characters.'),
 ];
 
 const loginRules = [

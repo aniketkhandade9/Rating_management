@@ -194,6 +194,7 @@ export default function AdminUsers() {
                 <Th col="email"   label="Email"   {...{ sortBy: sort.by, sortOrder: sort.order, onSort }} />
                 <Th col="address" label="Address" {...{ sortBy: sort.by, sortOrder: sort.order, onSort }} />
                 <Th col="role"    label="Role"    {...{ sortBy: sort.by, sortOrder: sort.order, onSort }} />
+                <th>Rating</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -225,6 +226,17 @@ export default function AdminUsers() {
                         <option value="admin">Admin</option>
                       )}
                     </select>
+                  </td>
+                  <td>
+                    {u.role === 'store_owner' ? (
+                      u.averageRating ? (
+                        <span style={{ color: 'var(--yellow)', fontWeight: 700 }}>★ {Number(u.averageRating).toFixed(1)}</span>
+                      ) : (
+                        <span className="text-muted text-xs">No ratings</span>
+                      )
+                    ) : (
+                      <span className="text-muted">—</span>
+                    )}
                   </td>
                   <td>
                     <div className="td-actions">

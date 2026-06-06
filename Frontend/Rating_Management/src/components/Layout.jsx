@@ -49,7 +49,6 @@ const NAV = {
     { to: '/admin/dashboard', label: 'Dashboard',      Icon: IconDashboard },
     { to: '/admin/users',     label: 'Users',          Icon: IconUsers     },
     { to: '/admin/stores',    label: 'Stores',         Icon: IconStore     },
-    { to: '/admin/requests',  label: 'Store Requests', Icon: IconRequests  },
   ],
   user: [
     { to: '/user/stores',           label: 'Browse Stores',   Icon: IconStore },

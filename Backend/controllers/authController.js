@@ -14,21 +14,50 @@ const publicUser = ({ id, name, email, address, role }) => ({ id, name, email, a
 // ─────────────────────────────────────────────────────────────────────────────
 
 exports.signup = asyncHandler(async (req, res, next) => {
-  const { name, email, password, address, role } = req.body;
+  const { name, email, password, address, role, storeName, storeEmail, storeAddress } = req.body;
 
   const targetRole = (role === 'store_owner' || role === 'user') ? role : 'user';
 
-  const [existing] = await db.query('SELECT id FROM users WHERE email = ?', [email]);
-  if (existing.length) return next(new AppError('Email is already registered.', 409));
+  const [existingUser] = await db.query('SELECT id FROM users WHERE email = ?', [email]);
+  if (existingUser.length) return next(new AppError('Email is already registered.', 409));
+
+  if (targetRole === 'store_owner') {
+    const [existingStore] = await db.query('SELECT id FROM stores WHERE email = ?', [storeEmail]);
+    if (existingStore.length) return next(new AppError('Store email is already registered.', 409));
+  }
 
   const hash = await bcrypt.hash(password, 12);
-  const [{ insertId }] = await db.query(
-    'INSERT INTO users (name, email, password, address, role) VALUES (?, ?, ?, ?, ?)',
-    [name, email, hash, address, targetRole]
-  );
+  const conn = await db.getConnection();
+  await conn.beginTransaction();
 
-  const user = { id: insertId, name, email, address, role: targetRole };
-  res.status(201).json({ success: true, message: 'Account created.', token: signToken(user), user: publicUser(user) });
+  try {
+    const [{ insertId }] = await conn.query(
+      'INSERT INTO users (name, email, password, address, role) VALUES (?, ?, ?, ?, ?)',
+      [name, email, hash, address, targetRole]
+    );
+
+    if (targetRole === 'store_owner') {
+      await conn.query(
+        'INSERT INTO stores (name, email, address, owner_id) VALUES (?, ?, ?, ?)',
+        [storeName, storeEmail, storeAddress, insertId]
+      );
+    }
+
+    await conn.commit();
+
+    const user = { id: insertId, name, email, address, role: targetRole };
+    res.status(201).json({
+      success: true,
+      message: 'Account and store created successfully.',
+      token: signToken(user),
+      user: publicUser(user)
+    });
+  } catch (err) {
+    await conn.rollback();
+    next(err);
+  } finally {
+    conn.release();
+  }
 });
 
 exports.login = asyncHandler(async (req, res, next) => {
